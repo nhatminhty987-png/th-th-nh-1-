@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hành Tinh Phát Sáng</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #020205; /* Nền tối hơn */
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 0 10px #00aaff, 0 0 20px #0055ff, 0 0 30px #0022ff; /* Chữ sáng hơn */
+            width: 80%;
+            z-index: 10;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        p {
+            font-size: 1.2rem;
+            color: #e0f2fe;
+            text-shadow: 0 0 5px #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay">
+        <h1>✨ Vũ trụ của mình vốn dĩ là những chuỗi dữ liệu hỗn độn ❤️</h1>
+        <p>nhưng lực hấp dẫn của em đã sắp xếp mọi thứ vào đúng vị trí.</p>
+        <p> from ming to minzchou</p>
+    </div>
+
+    <canvas id="galaxyCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const particles = [];
+        const numParticles = 3000; // Tăng số lượng hạt
+        const fov = 400;
+
+        // Khởi tạo vành đai
+        for (let i = 0; i < numParticles; i++) {
+            const theta = Math.random() * 2 * Math.PI;
+            // Tạo các vòng đai rõ nét hơn
+            const r = 120 + Math.random() * 250; 
+            
+            particles.push({
+                x: r * Math.cos(theta),
+                y: (Math.random() - 0.5) * 20, // Làm vành đai mỏng lại
+                z: r * Math.sin(theta),
+                size: Math.random() * 1.5 + 0.5,
+                color: `hsla(${Math.random() * 40 + 200}, 100%, ${Math.random() * 50 + 50}%, ${Math.random() * 0.8 + 0.2})`,
+                speed: 0.001 + Math.random() * 0.002
+            });
+        }
+
+        let angleX = 0.5; // Góc nghiêng của vành đai
+        let angleY = 0;
+
+        function drawPlanet() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 60;
+
+            // Hiệu ứng phát sáng (Glow)
+            ctx.shadowBlur = 50;
+            ctx.shadowColor = '#00aaff';
+
+            // Vẽ hành tinh
+            const gradient = ctx.createRadialGradient(centerX - 20, centerY - 20, 10, centerX, centerY, radius);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.2, '#00aaff');
+            gradient.addColorStop(0.8, '#0022aa');
+            gradient.addColorStop(1, '#000022');
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Reset shadow cho các hạt sao
+            ctx.shadowBlur = 0;
+        }
+
+        function animate() {
+            // Nền đen mờ tạo vệt sao
+            ctx.fillStyle = 'rgba(2, 2, 5, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            angleY -= 0.005; // Tốc độ xoay vành đai
+
+            const cosY = Math.cos(angleY);
+            const sinY = Math.sin(angleY);
+            const cosX = Math.cos(angleX);
+            const sinX = Math.sin(angleX);
+
+            // Vẽ hành tinh ở giữa trước
+            drawPlanet();
+
+            particles.forEach(p => {
+                // Tự xoay quanh trục
+                let tempX = p.x * Math.cos(p.speed) - p.z * Math.sin(p.speed);
+                let tempZ = p.z * Math.cos(p.speed) + p.x * Math.sin(p.speed);
+                p.x = tempX;
+                p.z = tempZ;
+
+                // Xoay quanh trục Y và X của camera
+                let x1 = p.x * cosY - p.z * sinY;
+                let z1 = p.z * cosY + p.x * sinY;
+                let y2 = p.y * cosX - z1 * sinX;
+                let z2 = z1 * cosX + p.y * sinX;
+
+                const offsetZ = 500;
+                const scale = fov / (fov + z2 + offsetZ);
+                const x2d = (x1 * scale) + width / 2;
+                const y2d = (y2 * scale) + height / 2;
+
+                if (z2 + offsetZ > 0) {
+                    ctx.beginPath();
+                    ctx.arc(x2d, y2d, p.size * scale, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
